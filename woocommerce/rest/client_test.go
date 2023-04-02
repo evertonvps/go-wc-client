@@ -1,11 +1,11 @@
-package woocommerce
+package rest
 
 import (
 	"testing"
 )
 
 func TestClientWithDefaultParams(t *testing.T) {
-	client, err := NewClient("http://example.tld", "", "", nil)
+	client, err := NewClient("http://example.tld", nil)
 
 	if err != nil {
 		t.Fatal("Unexpected error on valid input")
@@ -16,9 +16,8 @@ func TestClientWithDefaultParams(t *testing.T) {
 	}
 }
 
-
 func TestClientWithDifferentVersion(t *testing.T) {
-	client, err := NewClient("http://example.tld", "", "", &Options{Version: "v3"})
+	client, err := NewClient("http://example.tld", &ApiConfig{Version: "v3"})
 
 	if err != nil {
 		t.Fatal("Unexpected error on valid input")
