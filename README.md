@@ -1,15 +1,15 @@
 # WooCommerce API - Golang Client
 
 A Golang wrapper for the WooCommerce REST API. Easily interact with the WooCommerce REST API using this library.
-This is a fork of `mikespook/wc-api-golang`. Main difference: get/post/put/delete accepts context and package uses
-`http.DefaultClient` and `http.DefaultTransport`.
+This is a fork of `darh/wc-api-golang`. Main difference: 
+Basically the Client of `darh/wc-api-golang` is the core, and the WcClient encapsulates it together with the services (Products, Orders, etc). 
 
-This lib is **not** backward compatible with mikespook/wc-api-golang`!
+This lib is **not** backward compatible with darh/wc-api-golang!
 
 ## Installation
 
 ```bash
-$ go get github.com/darh/wc-api-golang/woocommerce
+$ go get github.com/evertonvps/go-wc-client
 ```
 
 ## Getting started
@@ -25,28 +25,25 @@ Setup for the new WP REST API integration (WooCommerce 2.6 or later):
 
 ```golang
 import (
-  wc "github.com/darh/wc-api-golang/woocommerce"
+	"github.com/evertonvps/go-wc-client/woocommerce/rest"
+	"github.com/evertonvps/go-wc-client/woocommerce/rest/api"
 )
 
-var woocommerce = wc.NewClient(
-    "http://example.com", 
-    "ck_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 
-    "cs_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    &wc.Options {
-        API: true,
-        Version: "wc/v1",
-    },
-);
+	woocommerce, err := api.NewWoocommerceClient("https://fake-store.com", &rest.ApiConfig{
+		API:            true,
+		APIPrefix:      "/wp-json/wc",
+		Version:        "v3",
+		ConsumerKey:    "ck_",
+		ConsumerSecret: "cs_",
+	})
 ```
 
 ### Paramaters
 
-|       Option      |   Type   |                Description                 |
+|       ApiConfig   |   Type   |                Description                 |
 | ----------------- | -------- | ------------------------------------------ |
 | `store`           | `string` | Your Store URL, example: http://woo.dev/   |
-| `ck`              | `string` | Your API consumer key                      |
-| `cs`              | `string` | Your API consumer secret                   |
-| `options`         | `*wc.Options`  | Extra arguments (see client options table) |
+| `apiConfig`       | `*rest.ApiConfig`  | Extra arguments (see client options table) |
 
 #### Client options
 
@@ -59,6 +56,26 @@ var woocommerce = wc.NewClient(
 | `VerifySSL`        | `bool`   | Verify SSL when connect, use this option as `false` when need to test with self-signed certificates, default is `true` |
 | `QueryStringAuth` | `bool`   | Force Basic Authentication as query string when `true` and using under HTTPS, default is `false`                       |
 | `OauthTimestamp`   | `time.Time` | Custom oAuth timestamp, default is `time.Now()`                                                                            |
+| `ck`              | `string` | Your API consumer key                      |
+| `cs`              | `string` | Your API consumer secret                   |
+
+## Interfaces
+### Get Products
+```golang
+    ctx := context.Background()
+		var products *[]models.Product
+		products, err := woocommerce.Products().Get(ctx, map[string][]string{})
+
+		if err == nil {
+			for _, product := range *products {
+				fmt.Println("Product: ", product.Name)
+			}
+
+		} else {
+			println("Error:", err.Error())
+		}
+```
+----
 
 ## Methods
 

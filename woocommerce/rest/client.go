@@ -1,4 +1,4 @@
-package woocommerce
+package rest
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sort"
@@ -22,40 +23,48 @@ import (
 
 const (
 	Version       = "1.0.0"
-	UserAgent     = "WooCommerce API Client-PHP/" + Version
+	UserAgent     = "WooCommerce API Client/" + Version
 	HashAlgorithm = "HMAC-SHA256"
 )
 
+// Http client
 type Client struct {
 	storeURL  *url.URL
-	ck        string
-	cs        string
-	option    *Options
+	apiConfig *ApiConfig
 	rawClient *http.Client
 }
 
-func NewClient(store, ck, cs string, option *Options) (*Client, error) {
+type Interface interface {
+	//Post() *Client
+	//Put() *Client
+	//	Patch() *Client
+	Get(ctx context.Context, endpoint string, params url.Values, result interface{}) error
+	///Delete() *Client
+}
+
+// NewClient creates a new httpClient for the given apiConfig.
+func NewClient(store string, apiConfig *ApiConfig) (*Client, error) {
 	storeURL, err := url.Parse(store)
 	if err != nil {
 		return nil, err
 	}
 
-	if option == nil {
-		option = &Options{}
+	if apiConfig == nil {
+		apiConfig = &ApiConfig{}
 	}
-	if option.OauthTimestamp.IsZero() {
-		option.OauthTimestamp = time.Now()
+	if apiConfig.OauthTimestamp.IsZero() {
+		apiConfig.OauthTimestamp = time.Now()
 	}
 
-	if option.Version == "" {
-		option.Version = "v2"
+	if apiConfig.Version == "" {
+		apiConfig.Version = "v2"
 	}
 	path := "/wp-json/wc"
-	if option.API {
-		path = option.APIPrefix
+	if apiConfig.API {
+		path = apiConfig.APIPrefix
 	}
 
-	storeURL.Path = path + "/" + option.Version
+	storeURL.Path = path + "/" + apiConfig.Version
 
 	rawClient := http.DefaultClient
 
@@ -65,27 +74,28 @@ func NewClient(store, ck, cs string, option *Options) (*Client, error) {
 	}
 
 	if transport, ok := rawClient.Transport.(*http.Transport); ok && transport != nil {
-		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: option.VerifySSL}
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: apiConfig.VerifySSL}
 	}
 
-	return &Client{
-		storeURL:  storeURL,
-		ck:        ck,
-		cs:        cs,
-		option:    option,
+	c := &Client{
+		storeURL: storeURL,
+
+		apiConfig: apiConfig,
 		rawClient: rawClient,
-	}, nil
+	}
+
+	return c, nil
 }
 
 func (c *Client) basicAuth(params url.Values) string {
-	params.Add("consumer_key", c.ck)
-	params.Add("consumer_secret", c.cs)
+	params.Add("consumer_key", c.apiConfig.ConsumerKey)
+	params.Add("consumer_secret", c.apiConfig.ConsumerSecret)
 	return params.Encode()
 }
 
 func (c *Client) oauth(method, urlStr string, params url.Values) string {
-	params.Add("oauth_consumer_key", c.ck)
-	params.Add("oauth_timestamp", strconv.Itoa(int(c.option.OauthTimestamp.Unix())))
+	params.Add("oauth_consumer_key", c.apiConfig.ConsumerKey)
+	params.Add("oauth_timestamp", strconv.Itoa(int(c.apiConfig.OauthTimestamp.Unix())))
 	nonce := make([]byte, 16)
 	rand.Read(nonce)
 	sha1Nonce := fmt.Sprintf("%x", sha1.Sum(nonce))
@@ -106,8 +116,8 @@ func (c *Client) oauth(method, urlStr string, params url.Values) string {
 }
 
 func (c *Client) oauthSign(method, endpoint, params string) string {
-	signingKey := c.cs
-	if c.option.Version != "v1" || c.option.Version != "v2" {
+	signingKey := c.apiConfig.ConsumerSecret
+	if c.apiConfig.Version != "v1" && c.apiConfig.Version != "v2" {
 		signingKey = signingKey + "&"
 	}
 
@@ -181,8 +191,24 @@ func (c *Client) Put(ctx context.Context, endpoint string, data interface{}) (io
 	return c.request(ctx, "PUT", endpoint, nil, data)
 }
 
-func (c *Client) Get(ctx context.Context, endpoint string, params url.Values) (io.ReadCloser, error) {
-	return c.request(ctx, "GET", endpoint, params, nil)
+func (c *Client) Get(ctx context.Context, endpoint string, params url.Values, result interface{}) error {
+
+	response, err := c.request(ctx, "GET", endpoint, params, nil)
+	if err != nil {
+		return err
+	}
+	body, err := ioutil.ReadAll(response)
+	if err != nil {
+		return err
+
+	} else {
+
+		if err := json.Unmarshal(body, &result); err != nil {
+			return err
+		}
+
+	}
+	return nil
 }
 
 func (c *Client) Delete(ctx context.Context, endpoint string, params url.Values) (io.ReadCloser, error) {

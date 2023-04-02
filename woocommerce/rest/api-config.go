@@ -1,10 +1,10 @@
-package woocommerce
+package rest
 
 import (
 	"time"
 )
 
-type Options struct {
+type ApiConfig struct {
 	API             bool
 	APIPrefix       string
 	Version         string
@@ -12,4 +12,6 @@ type Options struct {
 	VerifySSL       bool
 	QueryStringAuth string
 	OauthTimestamp  time.Time
+	ConsumerKey     string
+	ConsumerSecret  string
 }
