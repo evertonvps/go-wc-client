@@ -51,6 +51,9 @@ func (p *productsApi) FindBySKU(ctx context.Context, sku string) (product *model
 	v.Set("sku", sku)
 
 	err = p.client.Get(ctx, ENDPOINT_PRODUCTS, v, &products)
-	product = &products[0]
+	if len(products) > 0 {
+		product = &products[0]
+	}
+
 	return
 }

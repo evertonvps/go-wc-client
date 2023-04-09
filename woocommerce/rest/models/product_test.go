@@ -124,7 +124,7 @@ func TestUnmarshalJsonList(t *testing.T) {
 
 	var products []Product
 	if err := json.Unmarshal([]byte(productsJson), &products); err == nil { // Parse []byte to the go struct pointer
-		println(products[0].Name)
+		println("Product:", products[0].Name, products[0].Price)
 	} else {
 
 		t.Errorf("Unmarshal fail: %v", err.Error())
