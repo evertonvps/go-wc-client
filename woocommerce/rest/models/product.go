@@ -18,9 +18,9 @@ type Product struct {
 	Description       string        `json:"description"`
 	ShortDescription  string        `json:"short_description"`
 	Sku               string        `json:"sku"`
-	Price             string        `json:"price"`
-	RegularPrice      string        `json:"regular_price"`
-	SalePrice         string        `json:"sale_price"`
+	Price             StringFloat   `json:"price"`
+	RegularPrice      StringFloat   `json:"regular_price"`
+	SalePrice         StringFloat   `json:"sale_price"`
 	DateOnSaleFrom    interface{}   `json:"date_on_sale_from"`
 	DateOnSaleFromGmt interface{}   `json:"date_on_sale_from_gmt"`
 	DateOnSaleTo      interface{}   `json:"date_on_sale_to"`
@@ -71,3 +71,4 @@ type Product struct {
 	StockStatus string `json:"stock_status"`
 	HasOptions  bool   `json:"has_options"`
 }
+type StringFloat string
